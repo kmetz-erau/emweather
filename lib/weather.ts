@@ -36,7 +36,7 @@ const HOURLY_VARS = [
   'temperature_2m', 'relative_humidity_2m', 'dew_point_2m',
   'precipitation', 'surface_pressure', 'shortwave_radiation',
   'direct_normal_irradiance', 'diffuse_radiation',
-  'wind_speed_100m', 'cloud_cover', 'et0_fao_evapotranspiration',
+  'wind_speed_10m', 'wind_gusts_10m', 'wind_speed_100m', 'cloud_cover', 'et0_fao_evapotranspiration',
 ].join(',');
 
 const DAILY_VARS = [
@@ -272,8 +272,20 @@ function processWeatherData(
   current.cddToday = daily[0]?.cdd65 ?? 0;
 
   const riskProfile = buildRiskProfile(location, daily);
+  const hourly = raw.hourly.time.map((time, i) => {
+    const hourlyTempF = cToF(raw.hourly.temperature_2m[i]);
+    const hourlyRh = raw.hourly.relative_humidity_2m[i];
+    return {
+      time,
+      tempF: round1(hourlyTempF), humidity: Math.round(hourlyRh),
+      precipInches: round2(mmToInches(raw.hourly.precipitation[i] ?? 0)),
+      windMph: round1(msToMph(raw.hourly.wind_speed_10m[i] ?? 0)),
+      gustMph: round1(msToMph(raw.hourly.wind_gusts_10m[i] ?? 0)),
+      wetBulbF: round1(wetBulbF(hourlyTempF, hourlyRh)),
+    };
+  });
 
-  return { location, current, daily, season, timezone: raw.timezone, fetchedAt: Date.now(), riskProfile };
+  return { location, current, daily, season, timezone: raw.timezone, fetchedAt: Date.now(), riskProfile, hourly };
 }
 
 function buildRiskProfile(location: Coordinates, daily: DailyForecast[]) {

@@ -62,9 +62,21 @@ export interface OpenMeteoHourlyData {
   direct_normal_irradiance: number[];   // W/m² DNI
   diffuse_radiation: number[];          // W/m² DHI
   wind_speed_100m: number[];
+  wind_speed_10m: number[];
+  wind_gusts_10m: number[];
   cloud_cover: number[];
   et0_fao_evapotranspiration: number[];
   soil_moisture_0_to_1cm?: number[];
+}
+
+export interface OperationalHour {
+  time: string;
+  tempF: number;
+  humidity: number;
+  precipInches: number;
+  windMph: number;
+  gustMph: number;
+  wetBulbF: number;
 }
 
 export interface OpenMeteoResponse {
@@ -200,6 +212,27 @@ export interface WeatherData {
   timezone: string;
   fetchedAt: number;
   riskProfile: LocationRiskProfile;
+  hourly: OperationalHour[];
+}
+
+export interface EnsembleDay {
+  date: string;
+  memberCount: number;
+  freezeProbability: number;
+  heavyRainProbability: number;
+  highWindProbability: number;
+  humidHeatProbability: number;
+  tempLowP10F: number;
+  tempLowP90F: number;
+  tempHighP10F: number;
+  tempHighP90F: number;
+}
+
+export interface EnsembleData {
+  location: string;
+  model: string;
+  daily: EnsembleDay[];
+  fetchedAt: number;
 }
 
 // NWS Alerts

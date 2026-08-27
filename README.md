@@ -72,13 +72,17 @@ Or connect the GitHub repo to Vercel via the dashboard — zero configuration ne
 - **4 charts**: temperature (max/min both locations), RH, daily precipitation, HDD/CDD
 - **NWS alerts**: active watches/warnings/advisories with severity, timing, and description
 - **Leaflet map**: both locations plotted with a dashed connector line
-- **Any location**: place name or lat,lon — international supported for weather (NWS alerts US-only)
+- **Fixed campus locations**: Prescott, Arizona and Daytona Beach, Florida
 - **Caching**: weather 30 min, alerts 5 min, geocoding 24 h via Next.js `revalidate`
 - **Campus operations briefing**: Ollama-powered summary with a deterministic fallback
 - **Ask WeatherOps**: natural-language questions grounded in loaded forecast and alert data
 - **Explainable operational risks**: cooling, heat, rain, wind, freeze, condensation, thunderstorm, and fire-weather scores
 - **Forecast change detection**: compares the current forecast with the prior browser snapshot
 - **Planning confidence**: labeled lead-time confidence and temperature-range proxy
+- **Probabilistic forecast**: GFS ensemble threshold probabilities and percentile ranges
+- **Forecast learning**: browser snapshots, forecast-change detection, and verification against observations
+- **Decision tools**: maintenance-window optimization and hourly event-weather screening
+- **Documentation page**: in-app architecture, formulas, limitations, configuration, and deployment guide
 
 ## Ollama Cloud Setup
 
@@ -115,7 +119,7 @@ components/
   ForecastTable.tsx     — 7-day tabular forecast
   WeatherCharts.tsx     — Recharts visualization panel
   AlertsPanel.tsx       — NWS alerts display
-  LocationInput.tsx     — Geocoding input form
+  DecisionToolsPanel.tsx — Maintenance and event planning tools
   LocationMap.tsx       — Leaflet map (dynamic, no SSR)
 types/
   index.ts              — TypeScript interfaces
@@ -129,4 +133,4 @@ NWS alerts work for US locations only. For non-US coordinates, the alerts panel 
 
 - [Open-Meteo](https://open-meteo.com) — free, open-source weather API, no key required
 - [National Weather Service API](https://www.weather.gov/documentation/services-web-api) — free, US government, no key required
-- Map tiles: CartoDB Dark Matter via OpenStreetMap
+- Map tiles: standard OpenStreetMap

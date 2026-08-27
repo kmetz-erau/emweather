@@ -73,9 +73,9 @@ export default function LocationMap({ loc1, loc2 }: Props) {
       });
       mapInstanceRef.current = map;
 
-      // Dark base layer
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '©OpenStreetMap ©CartoDB',
+      // Standard OpenStreetMap base layer
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
         maxZoom: 19,
       }).addTo(map);
 
