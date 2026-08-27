@@ -27,8 +27,8 @@ function Th({ children }: { children?: React.ReactNode }) {
   );
 }
 
-function Td({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <td className={`px-3 py-2 whitespace-nowrap ${className}`}>{children}</td>;
+function Td({ children, className = '', ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
+  return <td {...props} className={`px-3 py-2 whitespace-nowrap ${className}`}>{children}</td>;
 }
 
 export default function ForecastTable({ forecasts, locationName, label }: Props) {
