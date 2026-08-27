@@ -83,6 +83,7 @@ Or connect the GitHub repo to Vercel via the dashboard — zero configuration ne
 - **Forecast learning**: browser snapshots, forecast-change detection, and verification against observations
 - **Decision tools**: maintenance-window optimization and hourly event-weather screening
 - **Documentation page**: in-app architecture, formulas, limitations, configuration, and deployment guide
+- **Energy outlook page**: hourly HVAC pressure, economizer opportunity, moisture metrics, PV/irrigation estimates, and ten-year context
 
 ## Ollama Cloud Setup
 

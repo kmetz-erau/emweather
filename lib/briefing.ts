@@ -28,6 +28,10 @@ export function ruleBriefing(weather: WeatherData[], alerts: Array<AlertsData | 
 }
 
 export function compactWeather(w: WeatherData) {
+  const energyHours = w.hourly.map(h => ({ ...h,
+    coolingPressure: Math.round(Math.max(0, Math.min(100, ((h.tempF - 65) * 2.2 + h.ghiWm2 / 22) * .55 + ((h.dewPointF - 55) * 3 + (h.enthalpyBtu - 28) * 2) * .45))),
+  }));
+  const peakEnergyHour = energyHours.length ? energyHours.reduce((a, b) => b.coolingPressure > a.coolingPressure ? b : a) : null;
   return {
     location: w.location.name,
     current: w.current,
@@ -37,5 +41,12 @@ export function compactWeather(w: WeatherData) {
       windMph: d.windSpeedMax, confidence: d.confidence, risks: d.peakLoadRisk,
     })),
     operationalRisks: w.riskProfile.risks,
+    energySignals: {
+      peakCoolingPressure: peakEnergyHour ? { time: peakEnergyHour.time, score: peakEnergyHour.coolingPressure, tempF: peakEnergyHour.tempF, wetBulbF: peakEnergyHour.wetBulbF, dewPointF: peakEnergyHour.dewPointF, enthalpyBtu: peakEnergyHour.enthalpyBtu, ghiWm2: peakEnergyHour.ghiWm2 } : null,
+      economizerOpportunityHours: w.hourly.filter(h => h.tempF >= 45 && h.tempF <= 65 && h.enthalpyBtu <= 28 && h.dewPointF <= 55).length,
+      dewPointHoursAbove70F: w.hourly.filter(h => h.dewPointF >= 70).length,
+      enthalpyHoursAbove35: w.hourly.filter(h => h.enthalpyBtu >= 35).length,
+      wetBulbHoursAbove75F: w.hourly.filter(h => h.wetBulbF >= 75).length,
+    },
   };
 }

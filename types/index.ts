@@ -77,6 +77,9 @@ export interface OperationalHour {
   windMph: number;
   gustMph: number;
   wetBulbF: number;
+  dewPointF: number;
+  enthalpyBtu: number;
+  ghiWm2: number;
 }
 
 export interface OpenMeteoResponse {

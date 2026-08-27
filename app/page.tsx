@@ -98,6 +98,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-3">
             <a href="/documentation" className="px-3 py-1.5 text-xs font-mono border border-[#30363d] rounded text-slate-400 hover:text-slate-200">Documentation</a>
+            <a href="/energy" className="px-3 py-1.5 text-xs font-mono border border-blue-800 rounded text-blue-300 hover:bg-blue-950/30">Energy Outlook</a>
             {lastFetch && (
               <span className="text-[10px] font-mono text-slate-600 hidden sm:block">
                 Updated {new Date(lastFetch).toLocaleTimeString()}

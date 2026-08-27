@@ -3,14 +3,14 @@
 import { useEffect, useState } from 'react';
 import type { AlertsData, OperationsBriefing, WeatherData } from '@/types';
 
-export default function OperationsBriefingPanel({ weather, alerts }: { weather: WeatherData[]; alerts: Array<AlertsData | null> }) {
+export default function OperationsBriefingPanel({ weather, alerts, initialRole = 'Facilities leadership' }: { weather: WeatherData[]; alerts: Array<AlertsData | null>; initialRole?: string }) {
   const [briefing, setBriefing] = useState<OperationsBriefing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [asking, setAsking] = useState(false);
-  const [role, setRole] = useState('Facilities leadership');
+  const [role, setRole] = useState(initialRole);
 
   useEffect(() => {
     setLoading(true); setError('');

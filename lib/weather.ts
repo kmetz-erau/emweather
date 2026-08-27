@@ -282,6 +282,9 @@ function processWeatherData(
       windMph: round1(msToMph(raw.hourly.wind_speed_10m[i] ?? 0)),
       gustMph: round1(msToMph(raw.hourly.wind_gusts_10m[i] ?? 0)),
       wetBulbF: round1(wetBulbF(hourlyTempF, hourlyRh)),
+      dewPointF: round1(cToF(raw.hourly.dew_point_2m[i] ?? 0)),
+      enthalpyBtu: round2(enthalpyBtu(hourlyTempF, hourlyRh, raw.hourly.surface_pressure[i] ?? pressureHpa)),
+      ghiWm2: Math.round(raw.hourly.shortwave_radiation[i] ?? 0),
     };
   });
 
