@@ -68,7 +68,7 @@ export default function ForecastTable({ forecasts, locationName, label }: Props)
                 <Th>WB Max</Th><Th>Dew Pt</Th>
                 <Th>RH %</Th><Th>Enthalpy</Th>
                 <Th>Precip in</Th><Th>Cumul in</Th>
-                <Th>Risk</Th>
+                <Th>Confidence</Th><Th>Risk</Th>
               </>}
               {view === 'energy' && <>
                 <Th>Mean °F</Th>
@@ -112,6 +112,7 @@ export default function ForecastTable({ forecasts, locationName, label }: Props)
                     {day.precipInches.toFixed(2)}
                   </Td>
                   <Td className="text-slate-500">{day.precipCumulative.toFixed(2)}</Td>
+                  <Td title={`Planning range proxy ±${day.tempSpreadF.toFixed(1)}°F; confidence declines with lead time`} className={day.confidence === 'high' ? 'text-emerald-400' : day.confidence === 'medium' ? 'text-yellow-400' : 'text-orange-400'}>{day.confidence.toUpperCase()} · ±{day.tempSpreadF.toFixed(1)}°</Td>
                   <Td>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium ${peakLoadColor(day.peakLoadRisk)}`}>
                       {day.peakLoadRisk.slice(0,3).toUpperCase()}

@@ -74,6 +74,25 @@ Or connect the GitHub repo to Vercel via the dashboard — zero configuration ne
 - **Leaflet map**: both locations plotted with a dashed connector line
 - **Any location**: place name or lat,lon — international supported for weather (NWS alerts US-only)
 - **Caching**: weather 30 min, alerts 5 min, geocoding 24 h via Next.js `revalidate`
+- **Campus operations briefing**: Ollama-powered summary with a deterministic fallback
+- **Ask WeatherOps**: natural-language questions grounded in loaded forecast and alert data
+- **Explainable operational risks**: cooling, heat, rain, wind, freeze, condensation, thunderstorm, and fire-weather scores
+- **Forecast change detection**: compares the current forecast with the prior browser snapshot
+- **Planning confidence**: labeled lead-time confidence and temperature-range proxy
+
+## Ollama Cloud Setup
+
+Copy `.env.example` to `.env.local` for local development, or add these variables in Vercel project settings:
+
+```bash
+OLLAMA_BASE_URL=https://ollama.com/api
+OLLAMA_API_KEY=your_secret_api_key
+OLLAMA_MODEL=gpt-oss:20b
+```
+
+Never commit `.env.local` or an API key. Without `OLLAMA_API_KEY`, the dashboard remains functional and uses its deterministic briefing; only natural-language questions are unavailable.
+
+The AI receives only weather, calculated risks, and NWS alert data already loaded by the dashboard. Operational scores are calculated in code so the model explains evidence instead of inventing risk values.
 
 ## Project Structure
 

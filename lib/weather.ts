@@ -18,6 +18,7 @@ import {
   hddDay,
   cddDay,
   peakLoadRisk,
+  riskFromScore,
   formatDateLabel,
 } from './calculations';
 
@@ -163,6 +164,13 @@ function processWeatherData(
   const tempF = cToF(cur.temperature_2m);
   const rh = cur.relative_humidity_2m;
 
+  const currentLocalTime = cur.time ?? raw.hourly.time[0];
+  const todayLocal = currentLocalTime.slice(0, 10);
+  const elapsedPrecipMm = raw.hourly.time.reduce((total, t, i) => {
+    if (!t.startsWith(todayLocal)) return total;
+    return t <= currentLocalTime ? total + (raw.hourly.precipitation[i] ?? 0) : total;
+  }, 0);
+
   const current: CurrentConditions = {
     tempF:              round1(tempF),
     apparentTempF:      round1(cToF(cur.apparent_temperature)),
@@ -170,9 +178,9 @@ function processWeatherData(
     dewPointF:          round1(cToF(cur.dew_point_2m)),
     humidity:           Math.round(rh),
     enthalpyBtu:        round2(enthalpyBtu(tempF, rh, pressureHpa)),
-    precipTodayInches:  round2(mmToInches(cur.precipitation ?? 0)),
-    hddToday:           round1(hddDay(tempF)),
-    cddToday:           round1(cddDay(tempF)),
+    precipTodayInches:  round2(mmToInches(elapsedPrecipMm)),
+    hddToday:           0,
+    cddToday:           0,
     weatherCode:        cur.weather_code,
     windSpeedMph:       round1(msToMph(cur.wind_speed_10m)),
     windGustsMph:       round1(msToMph(cur.wind_gusts_10m ?? 0)),
@@ -211,8 +219,11 @@ function processWeatherData(
     const precipIn = mmToInches(d.precipitation_sum[i] ?? 0);
     cumulativePrecip += precipIn;
     const ghiKwh = mjToKwh(d.shortwave_radiation_sum[i] ?? 0);
-    const wbMax  = wetBulbF(maxF, humMin);  // worst case: hot + low humidity
-    const wbMin  = wetBulbF(minF, humMax);
+    const hourlyIndexes = raw.hourly.time.map((t, idx) => ({ t, idx })).filter(x => x.t.startsWith(dateStr));
+    const hourlyWetBulbs = hourlyIndexes.map(({ idx }) => wetBulbF(cToF(raw.hourly.temperature_2m[idx]), raw.hourly.relative_humidity_2m[idx]));
+    const hourlyEnthalpies = hourlyIndexes.map(({ idx }) => enthalpyBtu(cToF(raw.hourly.temperature_2m[idx]), raw.hourly.relative_humidity_2m[idx], raw.hourly.surface_pressure[idx] ?? pressureHpa));
+    const wbMax = hourlyWetBulbs.length ? Math.max(...hourlyWetBulbs) : wetBulbF(maxF, humMean);
+    const wbMin = hourlyWetBulbs.length ? Math.min(...hourlyWetBulbs) : wetBulbF(minF, humMean);
     const daylightSec = d.daylight_duration[i] ?? 0;
     const sunshineSec = d.sunshine_duration[i] ?? 0;
 
@@ -240,8 +251,8 @@ function processWeatherData(
       cdd70:  round1(cddDay(meanF, 70)),
       wetBulbMaxF: round1(wbMax),
       wetBulbMinF: round1(wbMin),
-      enthalpyMaxBtu: round2(enthalpyBtu(maxF, humMax, pressureHpa)),
-      enthalpyMinBtu: round2(enthalpyBtu(minF, humMin, pressureHpa)),
+      enthalpyMaxBtu: round2(hourlyEnthalpies.length ? Math.max(...hourlyEnthalpies) : enthalpyBtu(maxF, humMean, pressureHpa)),
+      enthalpyMinBtu: round2(hourlyEnthalpies.length ? Math.min(...hourlyEnthalpies) : enthalpyBtu(minF, humMean, pressureHpa)),
       ghiDailyKwh:  round2(ghiKwh),
       et0Mm:        round2(d.et0_fao_evapotranspiration[i] ?? 0),
       windSpeedMax:    round1(msToMph(d.wind_speed_10m_max[i] ?? 0)),
@@ -251,10 +262,52 @@ function processWeatherData(
       sunshineHours:   round2(sunshineSec / 3600),
       weatherCode:  d.weather_code[i],
       peakLoadRisk: peakLoadRisk(maxF, wbMax, ghiKwh),
+      confidence: i <= 1 ? 'high' : i <= 4 ? 'medium' : 'low',
+      tempSpreadF: round1(1.5 + i * 0.8),
+      precipProbability: d.precipitation_hours[i] > 0 ? Math.min(95, 35 + d.precipitation_hours[i] * 5) : 10,
     };
   });
 
-  return { location, current, daily, season, timezone: raw.timezone, fetchedAt: Date.now() };
+  current.hddToday = daily[0]?.hdd65 ?? 0;
+  current.cddToday = daily[0]?.cdd65 ?? 0;
+
+  const riskProfile = buildRiskProfile(location, daily);
+
+  return { location, current, daily, season, timezone: raw.timezone, fetchedAt: Date.now(), riskProfile };
+}
+
+function buildRiskProfile(location: Coordinates, daily: DailyForecast[]) {
+  const max = (key: keyof DailyForecast) => Math.max(...daily.map(d => Number(d[key]) || 0));
+  const maxTemp = max('tempMaxF');
+  const maxWetBulb = max('wetBulbMaxF');
+  const maxWind = max('windSpeedMax');
+  const totalRain = daily.reduce((s, d) => s + d.precipInches, 0);
+  const minTemp = Math.min(...daily.map(d => d.tempMinF));
+  const maxDew = max('dewPointMaxF');
+  const driestRh = Math.min(...daily.map(d => d.humidityMin));
+  const hottest = daily.reduce((a, b) => b.tempMaxF > a.tempMaxF ? b : a);
+  const wettest = daily.reduce((a, b) => b.precipInches > a.precipInches ? b : a);
+  const windiest = daily.reduce((a, b) => b.windSpeedMax > a.windSpeedMax ? b : a);
+  const risks = [
+    { type: 'Cooling demand', score: Math.min(100, Math.max(0, (maxTemp - 72) * 3 + (maxWetBulb - 60) * 2)), timing: hottest.dateLabel,
+      evidence: [`High ${maxTemp.toFixed(1)}°F`, `Wet bulb ${maxWetBulb.toFixed(1)}°F`], actions: ['Review HVAC schedules', 'Avoid coincident nonessential equipment starts'] },
+    { type: 'Heat stress', score: Math.min(100, Math.max(0, (maxWetBulb - 68) * 5)), timing: hottest.dateLabel,
+      evidence: [`Maximum wet bulb ${maxWetBulb.toFixed(1)}°F`], actions: ['Schedule strenuous outdoor work earlier', 'Confirm hydration and rest practices'] },
+    { type: 'Heavy rain', score: Math.min(100, totalRain * 38 + wettest.precipHours * 2), timing: wettest.dateLabel,
+      evidence: [`Seven-day precipitation ${totalRain.toFixed(2)} in`, `${wettest.precipInches.toFixed(2)} in on ${wettest.dateLabel}`], actions: ['Inspect drains and low areas', 'Review outdoor work plans'] },
+    { type: 'High wind', score: Math.min(100, Math.max(0, (maxWind - 15) * 4)), timing: windiest.dateLabel,
+      evidence: [`Maximum sustained wind ${maxWind.toFixed(1)} mph`], actions: ['Secure loose outdoor items', 'Review elevated-work restrictions'] },
+    { type: 'Thunderstorm', score: daily.some(d => d.weatherCode >= 95) ? 70 : daily.some(d => d.weatherCode >= 80) ? 25 : 0, timing: daily.find(d => d.weatherCode >= 95)?.dateLabel ?? wettest.dateLabel,
+      evidence: [daily.some(d => d.weatherCode >= 95) ? 'Thunderstorm weather code appears in the forecast' : 'No explicit thunderstorm code in the deterministic forecast'], actions: ['Monitor NWS alerts and radar', 'Review outdoor lightning procedures'] },
+    { type: 'Freeze', score: Math.min(100, Math.max(0, (38 - minTemp) * 8)), timing: daily.reduce((a, b) => b.tempMinF < a.tempMinF ? b : a).dateLabel,
+      evidence: [`Minimum temperature ${minTemp.toFixed(1)}°F`], actions: ['Review freeze-protection procedures', 'Inspect exposed piping'] },
+    { type: 'Condensation', score: Math.min(100, Math.max(0, (maxDew - 58) * 4)), timing: daily.reduce((a, b) => b.dewPointMaxF > a.dewPointMaxF ? b : a).dateLabel,
+      evidence: [`Maximum dew point ${maxDew.toFixed(1)}°F`], actions: ['Monitor indoor humidity', 'Check vulnerable envelope and air-handling areas'] },
+    { type: 'Fire weather', score: Math.min(100, Math.max(0, (35 - driestRh) * 2 + (maxWind - 15) * 2)), timing: windiest.dateLabel,
+      evidence: [`Minimum RH ${driestRh}%`, `Maximum wind ${maxWind.toFixed(1)} mph`], actions: ['Review ignition controls', 'Monitor official fire-weather products'] },
+  ].map(r => ({ ...r, severity: riskFromScore(r.score), score: Math.round(r.score) }));
+  risks.sort((a, b) => b.score - a.score);
+  return { location: location.name, overall: risks[0]?.severity ?? 'low', risks };
 }
 
 function round1(n: number) { return Math.round(n * 10) / 10; }

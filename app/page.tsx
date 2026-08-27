@@ -9,6 +9,9 @@ import ForecastTable from '@/components/ForecastTable';
 import WeatherCharts from '@/components/WeatherCharts';
 import AlertsPanel from '@/components/AlertsPanel';
 import EnergyMetricsPanel from '@/components/EnergyMetricsPanel';
+import OperationsBriefingPanel from '@/components/OperationsBriefingPanel';
+import RiskIntelligencePanel from '@/components/RiskIntelligencePanel';
+import ForecastChangePanel from '@/components/ForecastChangePanel';
 
 const LocationMap = dynamic(() => import('@/components/LocationMap'), {
   ssr: false,
@@ -175,6 +178,12 @@ export default function DashboardPage() {
             </div>
           </section>
         )}
+
+        {bothReady && !isLoading && <section><OperationsBriefingPanel weather={[data1.weather!, data2.weather!]} alerts={[data1.alerts, data2.alerts]} /></section>}
+
+        {bothReady && !isLoading && <section><div className="text-[10px] text-slate-500 font-mono uppercase tracking-widest mb-3">Explainable Campus Risks</div><RiskIntelligencePanel weather={[data1.weather!, data2.weather!]} /></section>}
+
+        {bothReady && !isLoading && <section><ForecastChangePanel weather={[data1.weather!, data2.weather!]} /></section>}
 
         {/* ── Energy manager summary ── */}
         {bothReady && !isLoading && (

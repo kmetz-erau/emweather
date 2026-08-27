@@ -108,6 +108,13 @@ export function peakLoadRisk(
   return 'low';
 }
 
+export function riskFromScore(score: number): 'low' | 'moderate' | 'high' | 'extreme' {
+  if (score >= 80) return 'extreme';
+  if (score >= 60) return 'high';
+  if (score >= 35) return 'moderate';
+  return 'low';
+}
+
 // ── Precipitation ─────────────────────────────────────────────────────────────
 
 export function rollingPrecip(dailyInches: number[]): number[] {

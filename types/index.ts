@@ -8,6 +8,7 @@ export interface Coordinates {
 
 // Open-Meteo API response shapes
 export interface OpenMeteoCurrentWeather {
+  time: string;
   temperature_2m: number;
   relative_humidity_2m: number;
   apparent_temperature: number;
@@ -124,6 +125,39 @@ export interface DailyForecast {
   cloudCoverMean?: number;
   weatherCode: number;
   peakLoadRisk: 'low' | 'moderate' | 'high' | 'extreme'; // derived
+  confidence: 'low' | 'medium' | 'high'; // lead-time planning confidence, not an ensemble probability
+  tempSpreadF: number; // conservative planning range proxy
+  precipProbability: number;
+}
+
+export type RiskSeverity = 'low' | 'moderate' | 'high' | 'extreme';
+
+export interface OperationalRisk {
+  type: string;
+  severity: RiskSeverity;
+  score: number;
+  timing: string;
+  evidence: string[];
+  actions: string[];
+}
+
+export interface LocationRiskProfile {
+  location: string;
+  overall: RiskSeverity;
+  risks: OperationalRisk[];
+}
+
+export interface OperationsBriefing {
+  overallStatus: 'normal' | 'watch' | 'action';
+  executiveSummary: string;
+  locations: Array<{
+    name: string;
+    summary: string;
+    recommendedActions: string[];
+  }>;
+  confidence: 'low' | 'medium' | 'high';
+  generatedBy: 'ai' | 'rules';
+  generatedAt: number;
 }
 
 export interface CurrentConditions {
@@ -165,6 +199,7 @@ export interface WeatherData {
   season: SeasonDegreedays | null;
   timezone: string;
   fetchedAt: number;
+  riskProfile: LocationRiskProfile;
 }
 
 // NWS Alerts
